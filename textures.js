@@ -1,46 +1,55 @@
 //represent gl object
 var gl;
 
-//points holds vertices for triangle strip
-//edges holds vertices for edges
+//points holds vertices for triangles
 var points = [];
-var edges  = [];
+var colors = [];
+var texCoords = [];
 
-//theta variable
-var thetaLoc;
-var theta = 0.0;
+//theta variables and bools along with it
+var cubeTheta = 0.0;
+var cubeRotate = true;
+var textureTheta = 0.0;
+var textureRotate = true;
 
-//vertex color, and color index variables
+//vertex color location variable
 var vColorLoc;
-var colorIndex = 0;
 
 //perspective matrix variables
 var pMatrix;
-var fovx = 45.0;
+var fov = 45.0;
 var aspect;
 var near = 0.1;
 var far = 200;
 
-//translation matrix, model-view matrix, and scale matrix
+//different matrices
 var tMatrix;
 var mvMatrix;
 var Matrix;
 var MatrixLoc;
 
 //x,y,z coord, and heading variable for camera movement
-var coord = [ 0, 0, -75 ];
-var headingAngle = 0;
+var coord = [ 0, 0, 0 ];
+
+//texture coordinates
+var texture;
+var texCoord = [
+    vec2(0, 0),
+    vec2(0, 1),
+    vec2(1, 1),
+    vec2(1, 0)
+];
 
 //vertex vectors
 var vertices = [
-    vec3( -1.0, -1.0,  1.0 ),
-    vec3( -1.0,  1.0,  1.0 ),
-    vec3(  1.0,  1.0,  1.0 ),
-    vec3(  1.0, -1.0,  1.0 ),
-    vec3( -1.0, -1.0, -1.0 ),
-    vec3( -1.0,  1.0, -1.0 ),
-    vec3(  1.0,  1.0, -1.0 ),
-    vec3(  1.0, -1.0, -1.0 ),
+    vec4( -1.0, -1.0,  1.0, 1.0 ),
+    vec4( -1.0,  1.0,  1.0, 1.0 ),
+    vec4(  1.0,  1.0,  1.0, 1.0 ),
+    vec4(  1.0, -1.0,  1.0, 1.0 ),
+    vec4( -1.0, -1.0, -1.0, 1.0 ),
+    vec4( -1.0,  1.0, -1.0, 1.0 ),
+    vec4(  1.0,  1.0, -1.0, 1.0 ),
+    vec4(  1.0, -1.0, -1.0, 1.0 ),
 ];
 
 //color array
@@ -55,26 +64,49 @@ var vertexColors = [
     [ 0.5, 0.5, 0.5, 1.0 ],  // grey
 ];
 
-//array of matrices to instance 8 cubes
+//array of matrices to instance 2 cubes
 var cubes = [
-    translate( 10,  10,  10),
-    translate( 10,  10, -10),
-    translate( 10, -10,  10),
-    translate( 10, -10, -10),
-    translate(-10,  10,  10),
-    translate(-10,  10, -10),
-    translate(-10, -10,  10),
-    translate(-10, -10, -10),
+    translate( 5, 0, 0),
+    translate( -5, 0, 0),
 ];
 
-//array of vertex vectors for crosshair
-var crosshair = [
-    vec3( -0.25, 0, 0),
-    vec3( 0.25, 0, 0),
-    vec3( 0, -.25, 0),
-    vec3( 0, 0.25, 0),
-];
-var crosshairON;
+//push vertices for one cube at origin
+function quad(a, b, c, d) {
+     points.push(vertices[a]); 
+     colors.push(vertexColors[a]); 
+     //texCoords.push(texCoord[0]);
+
+     points.push(vertices[b]); 
+     colors.push(vertexColors[a]);
+     //texCoords.push(texCoord[1]); 
+
+     points.push(vertices[c]); 
+     colors.push(vertexColors[a]);
+     //texCoords.push(texCoord[2]); 
+   
+     points.push(vertices[a]); 
+     colors.push(vertexColors[a]);
+     //texCoords.push(texCoord[0]); 
+
+     points.push(vertices[c]); 
+     colors.push(vertexColors[a]);
+     //texCoords.push(texCoord[2]); 
+
+     points.push(vertices[d]); 
+     colors.push(vertexColors[a]);
+     //texCoords.push(texCoord[3]);   
+}
+
+//creates one cube at the origin
+function cube()
+{
+    quad( 1, 0, 3, 2 );
+    quad( 2, 3, 7, 6 );
+    quad( 3, 0, 4, 7 );
+    quad( 6, 5, 1, 2 );
+    quad( 4, 5, 6, 7 );
+    quad( 5, 4, 0, 1 );
+}
 
 window.onload = function init()
 {
@@ -86,11 +118,7 @@ window.onload = function init()
     if ( !gl ) { alert( "WebG isn't available" ); }
 
     //create a cube
-    createCube();
-
-    for ( var i = 0; i < crosshair.length; ++i) {
-        points.push(crosshair[i]);
-    }
+    cube();
 
     //configure WebGL
     gl.viewport( 0, 0, canvas.width, canvas.height );
@@ -101,142 +129,89 @@ window.onload = function init()
     var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
-    // get variables from shader
-    vColorLoc = gl.getUniformLocation( program, "vColor" );
-    thetaLoc = gl.getUniformLocation( program, "theta");
+    // get variable from shader
     MatrixLoc = gl.getUniformLocation( program, "Matrix");
 
-    //create and bind buffer for vertices
+    //create and bind color buffer
+    var cBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW );
+    
+    //send to shader
+    var vColor = gl.getAttribLocation( program, "vColor" );
+    gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
+
+    //create and bind vertex buffer
     var vBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
     gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
-
-    //send the vertex buffer to shader
+    
+    //send to shader
     var vPosition = gl.getAttribLocation( program, "vPosition" );
-    gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
+    gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
+    
+    /*//create and bind texel buffer
+    var tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(texCoords), gl.STATIC_DRAW );
+    
+    //send to shader
+    var vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
+    gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vTexCoord )*/;
 
     //event listener
     window.onkeydown = function(event) {
         var key = event.keyCode > 48 ? String.fromCharCode(event.keyCode) : event.keyCode;
         var radian = radians(headingAngle);
         switch(key) {
-            case 'C':
-                colorIndex = (colorIndex + 1) % vertexColors.length;
-                break;
             case 'I':
                 coord[0] -=(.25 * Math.sin(radian));
                 coord[2] +=(.25 * Math.cos(radian));
                 break;
-            case 'J':
-                coord[0] +=(.25 * Math.cos(radian));
-                coord[2] +=(.25 * Math.sin(radian));
-                break;
-            case 'K':
-                coord[0] -=(.25 * Math.cos(radian));
-                coord[2] -=(.25 * Math.sin(radian));
-                break;
-            case 'M':
+            case 'O':
                 coord[0] +=(.25 * Math.sin(radian));
                 coord[2] -=(.25 * Math.cos(radian));
-                break;
-            case 'N':
-                fovx -= 1;
-                break;
-            case 'W':
-                fovx += 1;
-                break;        
-            case 'R':
-                coord[0] = 0;
-                coord[1] = 0;
-                coord[2] = -75;
-                headingAngle = 0;
-                fovx = 45;
                 break;   
-            case 37: //left arrow
-                headingAngle -=1;
+            case 'R':
                 break;
-            case 38: //up arrow
-                coord[1] -=.25;
+            case 'S':
                 break;
-            case 39: //right arrow
-                headingAngle +=1;
-                break;
-            case 40: //down arrow
-                coord[1] +=.25;
+            case 'T':
                 break;
             default:
                 break;
         }
     };
-
-    //event listener for '+'' key
-    window.onkeypress = function(event) {
-        var key = String.fromCharCode(event.keyCode);
-        switch(key) {
-            case '+':
-                crosshairON = !crosshairON;
-                break;
-            default:
-                break;
-        }
-    }
     
     render();
 };
-
-//returns fovy based on fovx
-function fovy()
-{
-    return ( 2 * Math.atan(Math.tan(radians(fovx)/2) / aspect) * 180 / Math.PI);
-}
-
-//push vertices for one cube at origin
-function createCube()
-{   
-    var indices = [ 0, 4, 7, 6, 3, 2, 1, 6, 5, 4, 1, 0, 3, 7, //vertices for faces 
-                    0, 1, 2, 3, 1, 2, 6, 7, 1, 5, 2, 6, 5, 6, 4, 7, 0, 4, 3, 7, 0, 3, 4, 5]; //vertices for edges
-
-    for ( var i = 0; i < indices.length; ++i ) {
-        points.push( vertices[indices[i]] );
-    }
-}
 
 function render() {
     //clear canvas
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
     
     //rotate by theta and send to shader
-    theta += 6.0;
-    gl.uniform1f(thetaLoc, theta);
+    cubeTheta += 36.0;
 
     //apply model-view matrix
-    pMatrix = perspective(fovy(), aspect, near, far);
-    tMatrix = mult(rotate(headingAngle, [ 0, 1, 0 ]), translate( coord[0], coord[1], coord[2]));
+    pMatrix = perspective(fov, aspect, near, far);
+    tMatrix = translate( coord[0], coord[1], coord[2]);
     mvMatrix = mult(pMatrix, tMatrix);
 
-    //instance 8 cubes with different colors
+    gl.uniformMatrix4fv(MatriLxoc, false, flatten(mvMatrix));
+    gl.drawArrays( gl.TRIANGLES, 0, 36 );
+
+    /*//instance 2 cubes with different colors
     for (var i = 0; i < cubes.length; ++i) {
         Matrix = mult(mvMatrix, cubes[i]);
         gl.uniformMatrix4fv(MatrixLoc, false, flatten(Matrix));
 
         //set up color of triangles then draw
-        gl.uniform4fv(vColorLoc, vertexColors[(colorIndex + i) % cubes.length]);
-        gl.drawArrays( gl.TRIANGLE_STRIP, 0, 14 );
-
-        //set up color of edges and draw
-        gl.uniform4fv(vColorLoc, [1,1,1,1]);
-        gl.drawArrays( gl.LINES, 14, 24);
-    }
-
-    if(crosshairON)
-    {
-        gl.uniform1f(thetaLoc,0);
-        mvMatrix = ortho(-1.0 * aspect, aspect, -1.0, 1.0, 0.0, 1.0);
-        gl.uniformMatrix4fv(MatrixLoc, false, flatten(mvMatrix));
-        gl.uniform4fv(vColorLoc, [1,1,1,1]);
-        gl.drawArrays( gl.LINES, 38, 4);
-    }
+        //gl.uniform4fv(vColorLoc, [ 1.0, 0.0, 0.0, 1.0 ]);
+        gl.drawArrays( gl.TRIANGLES, 0, 36 );
+    }*/
 
     //call render on browser refresh
     requestAnimFrame( render );
