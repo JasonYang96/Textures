@@ -23,11 +23,7 @@ var vertices = [
     vec4( 0.5, -0.5, -0.5, 1.0 )
 ];    
 
-var xAxis = 0;
-var yAxis = 1;
-var zAxis = 2;
-var axis = xAxis;
-var theta = [0, 0, 0];
+var theta = 0.0;
 
 var tMatrix;
 var mvMatrix;
@@ -147,7 +143,7 @@ window.onload = function init() {
 
 var render = function(){
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    theta[axis] += 2.0;
+    theta += 2.0
 
     pMatrix = perspective(fov, aspect, near, far);
     tMatrix = translate(coord[0], coord[1], coord[2]);
@@ -158,7 +154,7 @@ var render = function(){
         Matrix = mult(mvMatrix, cubes[i]);
         gl.uniformMatrix4fv(MatrixLoc, false, flatten(Matrix));
         gl.uniform4fv(vColorLoc, [1.0, 1.0, 1.0, 1.0]);
-        gl.uniform3fv(thetaLoc, flatten(theta));
+        gl.uniform1f(thetaLoc, theta);
         gl.drawArrays( gl.TRIANGLES, 0, 36 );
     }
     requestAnimFrame(render);
