@@ -2,7 +2,6 @@ var gl;
 var program;
 
 var pointsArray = [];
-var colorsArray = [];
 var texCoordsArray = [];
 
 var texture;
@@ -29,6 +28,25 @@ var yAxis = 1;
 var zAxis = 2;
 var axis = xAxis;
 var theta = [0, 0, 0];
+
+var tMatrix;
+var mvMatrix;
+var Matrix;
+var MatrixLoc;
+
+//perspective matrix variables
+var pMatrix;
+var fov = 45.0;
+var aspect;
+var near = 0.1;
+var far = 200;
+
+var coord = [ 0, 0, -5];
+
+var cubes = [
+    translate(  2, 0, 0),
+    translate( -2, 0, 0),
+];
 
 var thetaLoc;
 
@@ -68,8 +86,7 @@ function quad(a, b, c, d) {
 }
 
 
-function colorCube()
-{
+function colorCube() {
     quad( 1, 0, 3, 2 );
     quad( 2, 3, 7, 6 );
     quad( 3, 0, 4, 7 );
@@ -78,10 +95,10 @@ function colorCube()
     quad( 5, 4, 0, 1 );
 }
 
-
 window.onload = function init() {
 
     var canvas = document.getElementById( "gl-canvas" );
+    aspect = canvas.width/canvas.height;
     
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
@@ -123,7 +140,7 @@ window.onload = function init() {
 
     thetaLoc = gl.getUniformLocation(program, "theta"); 
     vColorLoc = gl.getUniformLocation(program, "vColor");
-    //MatrixLoc = gl.getUniformLocation(program, "Matrix");
+    MatrixLoc = gl.getUniformLocation(program, "Matrix");
        
     render();
 }
@@ -131,8 +148,18 @@ window.onload = function init() {
 var render = function(){
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     theta[axis] += 2.0;
-    gl.uniform4fv(vColorLoc, [1.0, 1.0, 1.0, 1.0]);
-    gl.uniform3fv(thetaLoc, flatten(theta));
-    gl.drawArrays( gl.TRIANGLES, 0, 36 );
+
+    pMatrix = perspective(fov, aspect, near, far);
+    tMatrix = translate(coord[0], coord[1], coord[2]);
+    mvMatrix = mult(pMatrix,tMatrix);
+
+    for(var i = 0; i < cubes.length; i++)
+    {
+        Matrix = mult(mvMatrix, cubes[i]);
+        gl.uniformMatrix4fv(MatrixLoc, false, flatten(Matrix));
+        gl.uniform4fv(vColorLoc, [1.0, 1.0, 1.0, 1.0]);
+        gl.uniform3fv(thetaLoc, flatten(theta));
+        gl.drawArrays( gl.TRIANGLES, 0, 36 );
+    }
     requestAnimFrame(render);
 }
