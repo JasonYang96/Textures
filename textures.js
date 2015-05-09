@@ -23,7 +23,12 @@ var vertices = [
     vec4( 0.5, -0.5, -0.5, 1.0 )
 ];    
 
+var rotation = true;
 var theta = 0.0;
+var axis = [
+    [0, 1, 0],
+    [1, 0, 0],
+];
 
 var tMatrix;
 var mvMatrix;
@@ -40,8 +45,8 @@ var far = 200;
 var coord = [ 0, 0, -5];
 
 var cubes = [
-    translate(  2, 0, 0),
     translate( -2, 0, 0),
+    translate(  2, 0, 0),
 ];
 
 var thetaLoc;
@@ -101,12 +106,9 @@ window.onload = function init() {
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
-    
     gl.enable(gl.DEPTH_TEST);
 
-    //
     //  Load shaders and initialize attribute buffers
-    //
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
     
@@ -137,14 +139,39 @@ window.onload = function init() {
     thetaLoc = gl.getUniformLocation(program, "theta"); 
     vColorLoc = gl.getUniformLocation(program, "vColor");
     MatrixLoc = gl.getUniformLocation(program, "Matrix");
+
+    //event listener
+    window.onkeydown = function(event) {
+        var key = event.keyCode > 48 ? String.fromCharCode(event.keyCode) : event.keyCode;
+        switch(key) {
+            case 'I':
+                coord[2] +=.25
+                break;
+            case 'O':
+                coord[2] -=.25
+                break;
+            case 'R':
+                rotation = !rotation;
+                break;
+            case 'S':
+                break;
+            case 'T':
+                break;
+            default:
+                break;
+        }
+    };
        
     render();
 }
 
 var render = function(){
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    theta += 2.0
-
+    
+    if(rotation) {
+        theta += 1.0;
+    }
+    
     pMatrix = perspective(fov, aspect, near, far);
     tMatrix = translate(coord[0], coord[1], coord[2]);
     mvMatrix = mult(pMatrix,tMatrix);
@@ -152,6 +179,7 @@ var render = function(){
     for(var i = 0; i < cubes.length; i++)
     {
         Matrix = mult(mvMatrix, cubes[i]);
+        Matrix = mult(Matrix, rotate(theta, axis[i]));
         gl.uniformMatrix4fv(MatrixLoc, false, flatten(Matrix));
         gl.uniform4fv(vColorLoc, [1.0, 1.0, 1.0, 1.0]);
         gl.uniform1f(thetaLoc, theta);
