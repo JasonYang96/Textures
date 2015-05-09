@@ -24,7 +24,7 @@ var vertices = [
 ];    
 
 var rotation = true;
-var theta = 0.0;
+var theta = [0.0, 0.0, 0.0];
 var axis = [
     [0, 1, 0],
     [1, 0, 0],
@@ -169,7 +169,8 @@ var render = function(){
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
     if(rotation) {
-        theta += 1.0;
+        theta[0] += 1.0;
+        theta[1] += 0.5;
     }
     
     pMatrix = perspective(fov, aspect, near, far);
@@ -179,10 +180,9 @@ var render = function(){
     for(var i = 0; i < cubes.length; i++)
     {
         Matrix = mult(mvMatrix, cubes[i]);
-        Matrix = mult(Matrix, rotate(theta, axis[i]));
+        Matrix = mult(Matrix, rotate(theta[i], axis[i]));
         gl.uniformMatrix4fv(MatrixLoc, false, flatten(Matrix));
         gl.uniform4fv(vColorLoc, [1.0, 1.0, 1.0, 1.0]);
-        gl.uniform1f(thetaLoc, theta);
         gl.drawArrays( gl.TRIANGLES, 0, 36 );
     }
     requestAnimFrame(render);
