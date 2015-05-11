@@ -31,13 +31,16 @@ var vertices = [
 ];    
 
 //variables dealing with rotation of cube
-var rotation = true;
-var theta = [0.0, 0.0, 0.0];
-var thetaLoc;
+var cubeRotation = true;
+var cubeTheta = [0.0, 0.0, 0.0];
 var axis = [
     [0, 1, 0],
     [1, 0, 0],
 ];
+
+//variables dealing with rotation of texture
+var textureRotation = true;
+var textureTheta = 0.0;
 
 //matrix variables
 var tMatrix;
@@ -168,12 +171,13 @@ window.onload = function init() {
                 coord[2] -=.25
                 break;
             case 'R':
-                rotation = !rotation;
+                cubeRotation = !cubeRotation;
                 break;
             case 'S':
                 scroll = !scroll;
                 break;
             case 'T':
+                textureRotation = !textureRotation;
                 break;
             default:
                 break;
@@ -187,12 +191,12 @@ var render = function(){
     //clear canvas
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
-    //rotate cubes if rotation bool is true
-    if(rotation) {
-        theta[0] += 1.0;
-        theta[1] += 0.5;
+    //rotate cubes if cubeRotation bool is true
+    if(cubeRotation) {
+        cubeTheta[0] += 1.0;
+        cubeTheta[1] += 0.5;
     }
-    
+
     //calculate mvMatrix
     pMatrix = perspective(fov, aspect, near, far);
     tMatrix = translate(coord[0], coord[1], coord[2]);
@@ -202,6 +206,14 @@ var render = function(){
     for(var i = 0; i < cubes.length; i++)
     {
         //scroll texture on each face for 2nd cube
+        if(i == 0)
+        {
+            if(textureRotation) {
+                textureTheta += 0.05;
+            }
+            gl.uniform1f(gl.getUniformLocation(program, "theta"), textureTheta);
+            gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), [0.0,0.0]);
+        }
         if(i == 1)
         {
             if(scroll) {
@@ -209,14 +221,13 @@ var render = function(){
                 if (scrolling[0] == 1.0)
                     scrolling[0] = 0.0;
             }
+            gl.uniform1f(gl.getUniformLocation(program, "theta"), 0);
             gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), scrolling);
         }
-        else
-            gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), [0.0,0.0]);
 
         gl.uniform1i(gl.getUniformLocation(program, "texture"), i);
         Matrix = mult(mvMatrix, cubes[i]);
-        Matrix = mult(Matrix, rotate(theta[i], axis[i]));
+        Matrix = mult(Matrix, rotate(cubeTheta[i], axis[i]));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "Matrix"), false, flatten(Matrix));
         gl.drawArrays( gl.TRIANGLES, 0, 36 );
     }
