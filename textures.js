@@ -10,6 +10,7 @@ var texCoordsArray = [];
 var eggertImg;
 var smallbergImg;
 var scrolling = [0.0, 0.0];
+var scroll = true;
 
 //coords of texture and vertices
 var texCoord = [
@@ -171,6 +172,7 @@ window.onload = function init() {
                 rotation = !rotation;
                 break;
             case 'S':
+                scroll = !scroll;
                 break;
             case 'T':
                 break;
@@ -203,9 +205,11 @@ var render = function(){
         //scroll texture on each face for 2nd cube
         if(i == 1)
         {
-            scrolling[0] += .005;
-            if (scrolling[0] == 1.0)
-                scrolling[0] = 0.0;
+            if(scroll) {
+                scrolling[0] += .005;
+                if (scrolling[0] == 1.0)
+                    scrolling[0] = 0.0;
+            }
             gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), scrolling);
         }
         else
