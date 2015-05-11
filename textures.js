@@ -20,14 +20,14 @@ var texCoord = [
     vec2(1, 0),
 ];
 var vertices = [
-    vec4( -0.5, -0.5,  0.5, 1.0 ),
-    vec4( -0.5,  0.5,  0.5, 1.0 ),
-    vec4( 0.5,  0.5,  0.5, 1.0 ),
-    vec4( 0.5, -0.5,  0.5, 1.0 ),
-    vec4( -0.5, -0.5, -0.5, 1.0 ),
-    vec4( -0.5,  0.5, -0.5, 1.0 ),
-    vec4( 0.5,  0.5, -0.5, 1.0 ),
-    vec4( 0.5, -0.5, -0.5, 1.0 )
+    vec4( -1.0, -1.0,  1.0, 1.0 ),
+    vec4( -1.0,  1.0,  1.0, 1.0 ),
+    vec4( 1.0,  1.0,  1.0, 1.0 ),
+    vec4( 1.0, -1.0,  1.0, 1.0 ),
+    vec4( -1.0, -1.0, -1.0, 1.0 ),
+    vec4( -1.0,  1.0, -1.0, 1.0 ),
+    vec4( 1.0,  1.0, -1.0, 1.0 ),
+    vec4( 1.0, -1.0, -1.0, 1.0 )
 ];    
 
 //variables dealing with rotation of cube
@@ -53,12 +53,12 @@ var fov = 45.0;
 var aspect;
 var near = 0.1;
 var far = 200;
-var coord = [ 0, 0, -5];
+var coord = [ 0, 0, -10];
 
 //translation matrices for instancing
 var cubes = [
-    translate( -2, 0, 0),
-    translate(  2, 0, 0),
+    translate( -3, 0, 0),
+    translate(  3, 0, 0),
 ];
 
 //configure images to textures
@@ -205,29 +205,41 @@ var render = function(){
     //instance cubes
     for(var i = 0; i < cubes.length; i++)
     {
-        //scroll texture on each face for 2nd cube
+        //rotate texture by center for 1st cube
+        //if textureRotation bool is true
         if(i == 0)
         {
             if(textureRotation) {
-                textureTheta += 0.05;
+                textureTheta += .05;
             }
             gl.uniform1f(gl.getUniformLocation(program, "theta"), textureTheta);
+
+            //pass in empty vec2 so texture does not scroll
             gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), [0.0,0.0]);
         }
-        if(i == 1)
+        //scroll texture on each face for 2nd cube
+        //if scroll bool is true
+        else //i == 1
         {
             if(scroll) {
                 scrolling[0] += .005;
+                //to prevent overflow
                 if (scrolling[0] == 1.0)
                     scrolling[0] = 0.0;
             }
-            gl.uniform1f(gl.getUniformLocation(program, "theta"), 0);
             gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), scrolling);
+
+            //pass in 0 degrees so texture does not rotate
+            gl.uniform1f(gl.getUniformLocation(program, "theta"), 0);
         }
 
-        gl.uniform1i(gl.getUniformLocation(program, "texture"), i);
+        //canculate translation and rotation matrix
         Matrix = mult(mvMatrix, cubes[i]);
         Matrix = mult(Matrix, rotate(cubeTheta[i], axis[i]));
+
+        //send in which texture to use, as well as the Matrix
+        //then draw the cube using TRIANGLES
+        gl.uniform1i(gl.getUniformLocation(program, "texture"), i);
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "Matrix"), false, flatten(Matrix));
         gl.drawArrays( gl.TRIANGLES, 0, 36 );
     }
