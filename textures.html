@@ -31,7 +31,8 @@
 		void
 		main()
 		{
-			vec2 rotation = vec2(cos(theta) * (fTexCoord[0] - 0.5) - sin(theta) * (fTexCoord[1] - 0.5) + 0.5, sin(theta) * (fTexCoord[0] - 0.5) + cos(theta) * (fTexCoord[1] - 0.5) + 0.5);
+			vec2 rotation = vec2(cos(theta) * (fTexCoord[0] - 0.5) - sin(theta) * (fTexCoord[1] - 0.5) + 0.5, 
+								 sin(theta) * (fTexCoord[0] - 0.5) + cos(theta) * (fTexCoord[1] - 0.5) + 0.5);
 		    gl_FragColor = texture2D( texture, rotation + scrolling);
 		}
 		</script>
