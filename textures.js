@@ -9,6 +9,7 @@ var texCoordsArray = [];
 //texture variables
 var eggertImg;
 var smallbergImg;
+var scrolling = [0.0, 0.0];
 
 //coords of texture and vertices
 var texCoord = [
@@ -41,7 +42,6 @@ var axis = [
 var tMatrix;
 var mvMatrix;
 var Matrix;
-var MatrixLoc;
 
 //perspective matrix variables
 var pMatrix;
@@ -69,7 +69,7 @@ function configureTexture() {
     gl.bindTexture( gl.TEXTURE_2D, eggertImg );
     gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, eggertImage );
     gl.generateMipmap( gl.TEXTURE_2D );
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIP_LINEAR );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 
     //configure 2nd image
@@ -78,7 +78,7 @@ function configureTexture() {
     gl.bindTexture( gl.TEXTURE_2D, smallbergImg );
     gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, smallbergImage );
     gl.generateMipmap( gl.TEXTURE_2D );
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIP_LINEAR );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 }
 
@@ -157,11 +157,6 @@ window.onload = function init() {
     //configure Textures
     configureTexture();
 
-    //grab variables from shaders
-    thetaLoc = gl.getUniformLocation(program, "theta"); 
-    vColorLoc = gl.getUniformLocation(program, "vColor");
-    MatrixLoc = gl.getUniformLocation(program, "Matrix");
-
     //event listener
     window.onkeydown = function(event) {
         var key = event.keyCode > 48 ? String.fromCharCode(event.keyCode) : event.keyCode;
@@ -205,11 +200,21 @@ var render = function(){
     //instance cubes
     for(var i = 0; i < cubes.length; i++)
     {
+        //scroll texture on each face for 2nd cube
+        if(i == 1)
+        {
+            scrolling[0] += .005;
+            if (scrolling[0] == 1.0)
+                scrolling[0] = 0.0;
+            gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), scrolling);
+        }
+        else
+            gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), [0.0,0.0]);
+
         gl.uniform1i(gl.getUniformLocation(program, "texture"), i);
         Matrix = mult(mvMatrix, cubes[i]);
         Matrix = mult(Matrix, rotate(theta[i], axis[i]));
-        gl.uniformMatrix4fv(MatrixLoc, false, flatten(Matrix));
-        gl.uniform4fv(vColorLoc, [1.0, 1.0, 1.0, 1.0]);
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "Matrix"), false, flatten(Matrix));
         gl.drawArrays( gl.TRIANGLES, 0, 36 );
     }
 
