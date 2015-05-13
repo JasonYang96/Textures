@@ -210,12 +210,15 @@ var render = function(){
         if(i == 0)
         {
             if(textureRotation) {
-                textureTheta += .05;
+                textureTheta += 1.5;
             }
             gl.uniform1f(gl.getUniformLocation(program, "theta"), textureTheta);
 
             //pass in empty vec2 so texture does not scroll
             gl.uniform2fv(gl.getUniformLocation(program, "scrolling"), [0.0,0.0]);
+
+            //pass in vec2 of 1 so the textures do not scale
+            gl.uniform2fv(gl.getUniformLocation(program, "scale"), [1.0,1.0]);
         }
         //scroll texture on each face for 2nd cube
         //if scroll bool is true
@@ -231,6 +234,9 @@ var render = function(){
 
             //pass in 0 degrees so texture does not rotate
             gl.uniform1f(gl.getUniformLocation(program, "theta"), 0);
+
+            //pass in vec2 of 2 so the texture coords get scaled by two
+            gl.uniform2fv(gl.getUniformLocation(program, "scale"), [2.0,2.0]);
         }
 
         //canculate translation and rotation matrix

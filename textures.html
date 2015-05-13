@@ -12,11 +12,13 @@
 		attribute  vec4 vPosition;
 		attribute  vec2 vTexCoord;
 		uniform mat4 Matrix;
+		uniform vec2 scale;
 		varying vec2 fTexCoord;
 
 		void main() 
-		{               
-		    fTexCoord = vTexCoord;
+		{   
+			//scale is [2,2] for the second cube to zoom out by 50%
+		    fTexCoord = vTexCoord * scale;
 		    gl_Position = Matrix * vPosition;
 		} 
 		</script>
@@ -31,9 +33,10 @@
 		void
 		main()
 		{
-			//rotation represents the new fTexCoord rotated by the center of the texture
-			vec2 rotation = vec2(cos(theta) * (fTexCoord[0] - 0.5) - sin(theta) * (fTexCoord[1] - 0.5) + 0.5, 
-								 sin(theta) * (fTexCoord[0] - 0.5) + cos(theta) * (fTexCoord[1] - 0.5) + 0.5);
+			float radian = radians(theta);
+			//rotation represents the new fTexCoord rotated by the center of the texture (0.5,0.5);
+			vec2 rotation = vec2(cos(radian) * (fTexCoord[0] - 0.5) - sin(radian) * (fTexCoord[1] - 0.5) + 0.5, 
+								 sin(radian) * (fTexCoord[0] - 0.5) + cos(radian) * (fTexCoord[1] - 0.5) + 0.5);
 		    gl_FragColor = texture2D( texture, rotation + scrolling);
 		}
 		</script>
