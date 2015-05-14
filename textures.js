@@ -9,7 +9,7 @@ var texCoordsArray = [];
 //texture variables
 var eggertImg;
 var smallbergImg;
-var scrolling = [0.0, 0.0];
+var scrolling = [0.5, 0.5];
 var scroll = true;
 
 //coords of texture and vertices
